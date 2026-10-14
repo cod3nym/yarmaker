@@ -59,8 +59,8 @@ DEFAULT_META_FIELDS = {
 
 # values can be string or lambda (optional argument - strings count)
 DEFAULT_CONDITIONS = [
-    lambda: '(PE)' in idaapi.get_file_type_name() and 'uint16(0) == 0x5A4D',
-    lambda: 'ELF' in idaapi.get_file_type_name() and 'uint32(0) == 0x464C457F',
+    lambda: '(PE)' in idaapi.get_file_type_name() and 'uint16(0) == 0x5a4d',
+    lambda: 'ELF' in idaapi.get_file_type_name() and 'uint32(0) == 0x464c457f',
     lambda count: f'{count // 2} of them' if count > 2 else 'all of them'
 ]
 
