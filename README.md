@@ -44,6 +44,8 @@ Rule editor default parameters (also editable in the editor window):
   via dropdown, entries are defined by `WILDCARD_MODES`
 - `DEFAULT_INDENT` - rule indentation (default: `2`)
 - `DEFAULT_NAMED_VARIABLES` = use names for strings (default: `True`)
+- `DEFAULT_SHOW_TEMPLATE` - show the full rule (`meta`, `condition`) instead of
+  only the generated strings (default: `False`)
 
 Default fields in `meta` section. Values can be string or lambda functions
 ```python

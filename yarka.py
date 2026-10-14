@@ -24,6 +24,7 @@ DEFAULT_WILDCARD = (            # wildcarded instruction parts (dropdown)
 )
 DEFAULT_INDENT = 2              # default indent
 DEFAULT_NAMED_VARIABLES = True  # use names for strings (variables)
+DEFAULT_SHOW_TEMPLATE = False   # show full rule instead of strings only (checkbox)
 
 # wildcard dropdown entries (label, mask), the default must be one of them
 WILDCARD_MODES = [
@@ -70,6 +71,7 @@ def generate_rule(name, entities) -> RuleBuilder:
         indent_headers=INDENT_HEADERS,
         wrap_curly_brace=WRAP_CURLY_BRACE,
         wildcard=DEFAULT_WILDCARD,
+        show_template=DEFAULT_SHOW_TEMPLATE,
     )
 
     for header, value in DEFAULT_META_FIELDS.items():
@@ -106,6 +108,11 @@ class YaraDialog(ui.ClosableDialog):
             default=DEFAULT_NAMED_VARIABLES,
             on_click=self.handle_named_variables_click,
         )
+        self.show_template_checkbox = ui.Checkbox(
+            label='Show Yara Rule Template',
+            default=DEFAULT_SHOW_TEMPLATE,
+            on_click=self.handle_show_template_click,
+        )
         self.indent_edit_label = ui.Label('indentation')
         self.indent_edit = ui.NumberInput(
             default=DEFAULT_INDENT,
@@ -125,7 +132,8 @@ class YaraDialog(ui.ClosableDialog):
                 self.use_named_variables_checkbox,
             ],
             top_right_items=[self.indent_edit_label, self.indent_edit],
-            body_items=[self.text_edit]
+            body_items=[self.text_edit],
+            bottom_left_items=[self.show_template_checkbox],
         )
 
     def _rebuild_rule(self):
@@ -142,6 +150,10 @@ class YaraDialog(ui.ClosableDialog):
 
     def handle_named_variables_click(self):
         self.rule.use_named_variables = self.use_named_variables_checkbox.is_checked()
+        self._rebuild_rule()
+
+    def handle_show_template_click(self):
+        self.rule.show_template = self.show_template_checkbox.is_checked()
         self._rebuild_rule()
 
     def handle_indent_change(self):

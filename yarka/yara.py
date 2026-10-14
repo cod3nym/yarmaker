@@ -18,6 +18,7 @@ class RuleBuilder(object):
             indent_headers: bool = False,
             wrap_curly_brace: bool = False,
             use_named_variables: bool = True,
+            show_template: bool = True,
         ):
         self.name = self._escape_name(name)
 
@@ -27,6 +28,7 @@ class RuleBuilder(object):
         self.indent_headers = indent_headers
         self.wrap_curly_brace = wrap_curly_brace
         self.use_named_variables = use_named_variables
+        self.show_template = show_template
 
         self.meta: Dict[str, Union[str, Callable]] = {}
         self.strings: Dict[str, YaraEntity] = {}
@@ -68,6 +70,9 @@ class RuleBuilder(object):
         return self
 
     def build(self):
+        if not self.show_template:
+            return self.build_strings(with_header=False)
+
         sanitized_name = self.sanitize_rule_name(self.name)
         result = f"rule {sanitized_name}"
         result += '\n' if self.wrap_curly_brace else ' '
@@ -91,8 +96,8 @@ class RuleBuilder(object):
         result += "\n"
         return result
 
-    def build_strings(self):
-        result = "strings:\n"
+    def build_strings(self, with_header: bool = True):
+        result = "strings:\n" if with_header else ''
         for key, value in self.strings.items():
             content = value.build(
                 show_comments=self.show_comments,
@@ -100,9 +105,11 @@ class RuleBuilder(object):
                 indent=self.indent,
             )
             var_name = key if self.use_named_variables else ''
-            result += self._indent(f'${var_name} = {content}')
+            line = f'${var_name} = {content}'
+            result += self._indent(line) if with_header else line
             result += '\n'
-        result += "\n"
+        if with_header:
+            result += "\n"
         return result
 
     def build_condition(self) -> str:
@@ -172,7 +179,7 @@ class RulesetBuilder(UserList):
         return '\n\n'.join(rules)
 
     def __setattr__(self, name: str, value: Any):
-        if name in {'show_comments', 'wildcard', 'indent', 'indent_headers'}:
+        if name in {'show_comments', 'wildcard', 'indent', 'indent_headers', 'show_template'}:
             for rule in iter(self):
                 setattr(rule, name, value)
         else:
