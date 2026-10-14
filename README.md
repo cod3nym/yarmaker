@@ -1,8 +1,8 @@
 ## YarMaker - create YARA signatures from selection
 
-IDA plugin with no dependencies to easily create YARA signatures 
-by selecting a set of instructions, strings or binary data. 
-Just select chunk and press `Ctrl+Y` to make the rule
+IDA plugin with no dependencies to easily create fine grained YARA signatures 
+by selecting a set of x86 instructions and choosing a wildcard mask. 
+Just select chunk and press `Ctrl+Y` to create a Yara hex pattern.
 
 ![Screenshot of opened editor dialog](images/screenshot_1.webp "YarMaker editor dialog")
 
