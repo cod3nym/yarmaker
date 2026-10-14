@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read plugin version
+        id: meta
+        run: |
+          name=$(jq -r '.plugin.name' ida-plugin.json)
+          version=$(jq -r '.plugin.version' ida-plugin.json)
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "archive=$name-$version.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Check for existing release of this version
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.meta.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Package plugin
+        run: |
+          mkdir -p stage
+          cp -r ida-plugin.json yarmaker.py yarmaker LICENSE README.md stage/
+          mkdir -p stage/images
+          cp images/logo.png stage/images/
+          find stage -name __pycache__ -type d -prune -exec rm -rf {} +
+          (cd stage && zip -qr "../${{ steps.meta.outputs.archive }}" .)
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.name }}-${{ steps.meta.outputs.version }}
+          path: ${{ steps.meta.outputs.archive }}
+          if-no-files-found: error
+
+      - name: Create GitHub release
+        if: steps.existing.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.meta.outputs.tag }}" "${{ steps.meta.outputs.archive }}" \
+            --target "${{ github.sha }}" \
+            --title "${{ steps.meta.outputs.tag }}" \
+            --generate-notes
