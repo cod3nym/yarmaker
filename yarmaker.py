@@ -5,12 +5,12 @@ import ida_kernwin
 import ida_funcs
 import ida_strlist
 
-from yarka.adapter import YaraExtractor
-from yarka.types import String, Wildcard
-from yarka.extractor import RangeExtractor, FunctionExtractor
-from yarka.yara import RuleBuilder, RulesetBuilder
-from yarka import ui
-from yarka import utils
+from yarmaker.adapter import YaraExtractor
+from yarmaker.types import String, Wildcard
+from yarmaker.extractor import RangeExtractor, FunctionExtractor
+from yarmaker.yara import RuleBuilder, RulesetBuilder
+from yarmaker import ui
+from yarmaker import utils
 
 
 # rule parameters
@@ -22,7 +22,7 @@ DEFAULT_SHOW_COMMENTS = True    # show comments (checkbox)
 DEFAULT_WILDCARD = (            # wildcarded instruction parts (dropdown)
     Wildcard.OFFSETS | Wildcard.DISPLACEMENTS
 )
-DEFAULT_INDENT = 2              # default indent
+DEFAULT_INDENT = 3              # default indent
 DEFAULT_NAMED_VARIABLES = True  # use names for strings (variables)
 DEFAULT_SHOW_TEMPLATE = False   # show full rule instead of strings only (checkbox)
 
@@ -80,7 +80,7 @@ def generate_rule(name, entities) -> RuleBuilder:
     existing = set()
     for i, entity in enumerate(entities, start=1):
         if str(entity) not in existing:
-            rule.add_string(f's{i}', entity)
+            rule.add_string(f'op{i}', entity)
             existing.add(str(entity))
 
     for condition in DEFAULT_CONDITIONS:
@@ -99,12 +99,12 @@ class YaraDialog(ui.ClosableDialog):
             on_change=self.handle_wildcard_change,
         )
         self.comments_checkbox = ui.Checkbox(
-            label='show comments',
+            label='Show comments',
             default=DEFAULT_SHOW_COMMENTS,
             on_click=self.handle_comments_checkbox_click,
         )
         self.use_named_variables_checkbox = ui.Checkbox(
-            label='named variables',
+            label='Named variables',
             default=DEFAULT_NAMED_VARIABLES,
             on_click=self.handle_named_variables_click,
         )
@@ -113,18 +113,18 @@ class YaraDialog(ui.ClosableDialog):
             default=DEFAULT_SHOW_TEMPLATE,
             on_click=self.handle_show_template_click,
         )
-        self.indent_edit_label = ui.Label('indentation')
+        self.indent_edit_label = ui.Label('Indentation')
         self.indent_edit = ui.NumberInput(
             default=DEFAULT_INDENT,
             min_value=2,
             max_value=8,
-            step=2,
+            step=1,
             on_change=self.handle_indent_change,
         )
         self.text_edit = ui.YaraTextEdit(rule.build())
 
         super().__init__(
-            title = 'Yarka - Generated Yara Rule',
+            title = 'YarMaker - Generated Yara Rule',
             width=800,
             top_left_items=[
                 self.wildcard_combo,
@@ -161,31 +161,29 @@ class YaraDialog(ui.ClosableDialog):
         self._rebuild_rule()
 
 
-class YarkaPlugin(idaapi.plugin_t):
+class YarMakerPlugin(idaapi.plugin_t):
     flags = idaapi.PLUGIN_FIX
-    comment = 'Yarka Plugin'
-    help = 'Yarka Plugin'
-    wanted_name = 'Yarka'
+    comment = 'YarMaker Plugin'
+    help = 'YarMaker Plugin'
+    wanted_name = 'YarMaker'
     wanted_hotkey = 'Ctrl+Alt+Y'
     banner = (
-        r" __     __        _         "
-        r" \ \   / /       | |        "
-        r"  \ \_/ /_ _ _ __| | ____ _ "
-        r"   \   / _` | '__| |/ / _` |"
-        r"    | | (_| | |  |   < (_| |"
-        r"    |_|\__,_|_|  |_|\_\__,_|"
-        r"                            "
+        r" __   __         __  __       _            " "\n"
+        r" \ \ / /_ _ _ __|  \/  | __ _| | _____ _ __ " "\n"
+        r"  \ V / _` | '__| |\/| |/ _` | |/ / _ \ '__|" "\n"
+        r"   | | (_| | |  | |  | | (_| |   <  __/ |   " "\n"
+        r"   |_|\__,_|_|  |_|  |_|\__,_|_|\_\___|_|   "
     )
 
     def init(self):
-        self.ui_hooks = YarkaUIHooks()
+        self.ui_hooks = YarMakerUIHooks()
         self.ui_hooks.hook()
 
-        label = 'Yarka: Generate Rule'
+        label = 'YarMaker: Generate Rule'
         hotkey = 'Ctrl+Y'
-        YarkaRule.register(self, label, hotkey)
-        YarkaStrings.register(self, label, hotkey)
-        YarkaFunctions.register(self, label, hotkey)
+        YarMakerRule.register(self, label, hotkey)
+        YarMakerStrings.register(self, label, hotkey)
+        YarMakerFunctions.register(self, label, hotkey)
 
         idaapi.msg(f'[{self.wanted_name}] loaded, hotkey - {self.wanted_hotkey}')
         return idaapi.PLUGIN_KEEP
@@ -201,7 +199,7 @@ class YarkaPlugin(idaapi.plugin_t):
         for i, function in enumerate(functions, start=1):
             if ida_kernwin.user_cancelled():
                 ida_kernwin.hide_wait_box()
-                ida_kernwin.warning('Yarka - ruleset generation canceled')
+                ida_kernwin.warning('YarMaker - ruleset generation canceled')
                 return None
 
             ida_kernwin.replace_wait_box(f'Processing ({i}/{len(functions)})')
@@ -213,7 +211,7 @@ class YarkaPlugin(idaapi.plugin_t):
                 if not rule.is_empty():
                     ruleset.append(rule)
             except Exception as e:
-                ida_kernwin.warning(f'Yarka - unexpected error {e}')
+                ida_kernwin.warning(f'YarMaker - unexpected error {e}')
 
         ida_kernwin.replace_wait_box('Building ruleset ...')
 
@@ -222,7 +220,7 @@ class YarkaPlugin(idaapi.plugin_t):
         ida_kernwin.hide_wait_box()
 
 
-class YarkaRule(ui.ActionHandler):
+class YarMakerRule(ui.ActionHandler):
     __windows__ = [idaapi.BWN_DISASM, idaapi.BWN_PSEUDOCODE]
 
     def activate(self, ctx):
@@ -235,7 +233,7 @@ class YarkaRule(ui.ActionHandler):
         self.dialog.show()
 
 
-class YarkaStrings(ui.ActionHandler):
+class YarMakerStrings(ui.ActionHandler):
     __windows__ = [idaapi.BWN_STRINGS]
 
     def activate(self, ctx):
@@ -256,7 +254,7 @@ class YarkaStrings(ui.ActionHandler):
         self.dialog.show()
 
 
-class YarkaFunctions(ui.ActionHandler):
+class YarMakerFunctions(ui.ActionHandler):
     __windows__ = [idaapi.BWN_FUNCS]
 
     def activate(self, ctx):
@@ -278,17 +276,17 @@ class YarkaFunctions(ui.ActionHandler):
         self.dialog.show()
 
 
-class YarkaUIHooks(idaapi.UI_Hooks):
+class YarMakerUIHooks(idaapi.UI_Hooks):
     def populating_widget_popup(self, form, popup):
         pass
 
     def finish_populating_widget_popup(self, form, popup):
-        YarkaRule.attach_ctx_menu(form, popup, 'Yarka')
-        YarkaStrings.attach_ctx_menu(form, popup, 'Yarka')
-        YarkaFunctions.attach_ctx_menu(form, popup, 'Yarka')
+        YarMakerRule.attach_ctx_menu(form, popup, 'YarMaker')
+        YarMakerStrings.attach_ctx_menu(form, popup, 'YarMaker')
+        YarMakerFunctions.attach_ctx_menu(form, popup, 'YarMaker')
 
 
-plugin = YarkaPlugin()
+plugin = YarMakerPlugin()
 
 
 def PLUGIN_ENTRY():

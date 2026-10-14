@@ -1,10 +1,10 @@
-## Yarka - create YARA signatures from selection
+## YarMaker - create YARA signatures from selection
 
 IDA plugin with no dependencies to easily create YARA signatures 
 by selecting a set of instructions, strings or binary data. 
 Just select chunk and press `Ctrl+Y` to make the rule
 
-![Screenshot of opened editor dialog](images/screenshot_1.webp "Yarka editor dialog")
+![Screenshot of opened editor dialog](images/screenshot_1.webp "YarMaker editor dialog")
 
 ### Features
 - Make rule from any entities in selection in "**Disassembly**" and "**Decompile**" views
@@ -20,17 +20,17 @@ Just select chunk and press `Ctrl+Y` to make the rule
 Install using the [Hex-Rays CLI tool (hcli)](https://github.com/HexRaysSA/ida-hcli):
 ```bash
 pip install ida-hcli
-hcli plugin install yarka
+hcli plugin install yarmaker
 ```
 
-**OR** install manually by copy `yarka.py` and the `yarka` folder to your IDA plugins directory (depends on your system):
+**OR** install manually by copy `yarmaker.py` and the `yarmaker` folder to your IDA plugins directory (depends on your system):
 - **Windows**: `%APPDATA%\Hex-Rays\IDA Pro\plugins\`
 - **macOS**: `~/Library/Application Support/IDA Pro/plugins/`
 - **Linux**: `~/.idapro/plugins/`
 
 ### Customization
 You can customize the rules format to suit your needs.
-To do this, replace global parameters in header of `yarka.py` file
+To do this, replace global parameters in header of `yarmaker.py` file
 
 Rule style parameters:
 - `WRAP_CURLY_BRACE` - wrap curly brace on a new line (default: `False`)
@@ -71,3 +71,12 @@ DEFAULT_CONDITIONS = [
 ### Credits
 Thanks to [mkYARA](https://github.com/fox-it/mkYARA) IDA plugin, 
 which was the inspiration for this project
+
+### License
+YarMaker is licensed under the [GNU General Public License v3.0](LICENSE).
+
+This project is a fork of [Yarka](https://github.com/AzzOnFire/yarka) by AzzOnFire
+and has been modified to better fit my personal workflow. Changes include a more fine-grained control over wildcard masking, giving the user the option to decide which parts of the instructions should be replaced with wildcards. Other changes are improvements to the rule editor interface and additional customization options for rule formatting.
+
+- Copyright (C) 2023 AzzOnFire
+- Copyright (C) 2026 Jonathan Peters

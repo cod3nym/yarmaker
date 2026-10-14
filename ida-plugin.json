@@ -1,20 +1,23 @@
 {
     "IDAMetadataDescriptorVersion": 1,
     "plugin": {
-      "name": "yarka",
-      "entryPoint": "yarka.py",
+      "name": "yarmaker",
+      "entryPoint": "yarmaker.py",
       "categories": ["malware-analysis", "ui-ux-and-visualization"],
       "logoPath": "images/logo.png",
       "idaVersions": ">=8.3",
-      "description" : "IDA plugin with no dependencies to easily create YARA signatures by selecting a set of instructions, strings or binary data",
-      "version": "0.7.2",
+      "description" : "IDA plugin to create YARA signatures from x86 instructions, with fine grained masking controls.",
+      "version": "0.1.0",
       "license": "GPL-3.0",
       "urls": {
-        "repository": "https://github.com/AzzOnFire/yarka"
+        "repository": "https://github.com/cod3nym/yarmaker"
       },
       "authors": [{
         "name": "AzzOnFire",
         "email": "malanov.io@gmail.com"
+      }, {
+        "name": "Jonathan Peters",
+        "email": "jonathan.peters@nextron-systems.com"
       }],
       "keywords": [
         "yara",
