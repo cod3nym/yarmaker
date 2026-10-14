@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import List, Optional, Iterable
 
-from .types import String, Instruction
+from .types import String, Instruction, Wildcard, DEFAULT_WILDCARD
 
 
 class YaraEntity(object):
@@ -64,7 +64,7 @@ class YaraInstructions(YaraEntity):
     def build(
             self,
             show_comments: bool = True,
-            strict: bool = False,
+            wildcard: Wildcard = DEFAULT_WILDCARD,
             indent: int = 2,
             **kwargs) -> str:
 
@@ -72,7 +72,7 @@ class YaraInstructions(YaraEntity):
         for insn in self.entities:
             result += ' ' * indent
 
-            data = insn.escape(escape_relative=not strict)
+            data = insn.escape(wildcard)
             if len(self.entities) == 1:
                 data = f'{{ {data} }}'
 

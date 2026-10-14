@@ -1,4 +1,5 @@
-from typing import Optional, List
+from enum import IntFlag
+from typing import Optional, List, Tuple
 
 import idaapi
 import idc
@@ -7,18 +8,38 @@ import ida_strlist
 import ida_bytes
 
 
+class Wildcard(IntFlag):
+    """Kinds of instruction parts replaced by wildcards in a pattern"""
+    NONE = 0
+    OFFSETS = 1         # branch targets and absolute/relative memory addresses
+    DISPLACEMENTS = 2   # [reg + disp] displacements
+    REGISTERS = 4       # register encoding (x86 only: ModRM/SIB bytes)
+    CONSTANTS = 8       # immediate values
+
+
+DEFAULT_WILDCARD = Wildcard.OFFSETS | Wildcard.DISPLACEMENTS
+
+
 class Operand(object):
     def __init__(self, operand: idaapi.op_t):
         self.operand = operand
 
-    def has_immediate_value(self) -> bool:
-        return self.operand.type == idaapi.o_imm
+    @property
+    def wildcard_kind(self) -> Wildcard:
+        """Kind of operand data stored in its own bytes, NONE if there is none"""
+        return {
+            idaapi.o_far: Wildcard.OFFSETS,
+            idaapi.o_near: Wildcard.OFFSETS,
+            idaapi.o_mem: Wildcard.OFFSETS,
+            idaapi.o_displ: Wildcard.DISPLACEMENTS,
+            idaapi.o_imm: Wildcard.CONSTANTS,
+        }.get(self.operand.type, Wildcard.NONE)
 
-    def has_relative_value(self) -> bool:
-        return self.operand.type in {
-            idaapi.o_far, idaapi.o_near, idaapi.o_mem, idaapi.o_displ
-        }
-         
+    def has_sib(self) -> bool:
+        # specflag1 is shared (o_crreg uses it as a suffix flag)
+        memory_types = {idaapi.o_phrase, idaapi.o_displ, idaapi.o_mem}
+        return self.operand.type in memory_types and bool(self.operand.specflag1)
+
     def is_empty(self) -> bool:
         return self.operand.type == idaapi.o_void
                                                        
@@ -73,31 +94,70 @@ class Instruction(object):
         total = [Operand(op) for op in self.insn.ops]
         return [op for op in total if not op.is_empty()]
 
-    def escape(
-            self,
-            escape_immediate: bool = False,
-            escape_relative: bool = True) -> str:
+    @staticmethod
+    def _has_data(op: Operand) -> bool:
+        return bool(op.byte_offset and op.wildcard_kind)
 
-        data = self.bytes.hex(' ').split()
-        
+    def _operand_ranges(self, wildcard: Wildcard) -> List[Tuple[int, int]]:
+        operands = [op for op in self.operands if self._has_data(op)]
+
+        # operand data spans from its offset to the next operand data (or end)
+        starts = sorted({op.byte_offset for op in operands})
+        ends = dict(zip(starts, starts[1:] + [self.size]))
+
+        return [
+            (op.byte_offset, ends[op.byte_offset])
+            for op in operands
+            if op.wildcard_kind & wildcard
+        ]
+
+    def _register_range(self) -> Optional[Tuple[int, int]]:
+        """Find ModRM (and SIB) bytes, where x86 encodes registers of operands.
+
+        Registers encoded inside the opcode (push/pop reg, mov reg, imm...)
+        are not covered
+        """
+        if idaapi.ph_get_id() != idaapi.PLFM_386:
+            return None
+
         operands = self.operands
-        for i, op in enumerate(operands):
-            if escape_relative and op.has_relative_value():
-                pass
-            elif escape_immediate and op.has_immediate_value():
-                pass
-            else:
-                continue
+        types = {op.operand.type for op in operands}
+        has_phrase = idaapi.o_phrase in types
+        has_memory = bool(types & {idaapi.o_displ, idaapi.o_mem})
+        if not (has_phrase or has_memory or idaapi.o_reg in types):
+            return None
 
-            start = op.byte_offset
-            if i != len(operands) - 1:
-                next_start = operands[i + 1].byte_offset
-                end = min(next_start, self.insn.size)
-            else:
-                end = self.insn.size
+        # ModRM and SIB are placed right before displacement/immediate
+        head_end = min(
+            (op.byte_offset for op in operands if self._has_data(op)),
+            default=self.size,
+        )
+        sib = int(any(op.has_sib() for op in operands))
+        modrm = head_end - 1 - sib
+        if modrm < 1:   # at least one opcode byte must precede ModRM
+            return None
 
-            if all((start, end)):
-                data[start:end] = ['??'] * (end - start)
+        mod = self.bytes[modrm] >> 6
+        if has_phrase and not has_memory:
+            valid = mod == 0    # also rejects string instructions (movs, lods...)
+        elif has_phrase or has_memory:
+            valid = mod != 3
+        else:
+            valid = mod == 3
+
+        return (modrm, modrm + 1 + sib) if valid else None
+
+    def escape(self, wildcard: Wildcard = DEFAULT_WILDCARD) -> str:
+        data = self.bytes.hex(' ').split()
+
+        ranges = self._operand_ranges(wildcard)
+        if wildcard & Wildcard.REGISTERS:
+            register_range = self._register_range()
+            if register_range:
+                ranges.append(register_range)
+
+        for start, end in ranges:
+            data[start:end] = ['??'] * (end - start)
 
         return ' '.join(data)
 

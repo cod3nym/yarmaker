@@ -19,6 +19,27 @@ class Checkbox(QtWidgets.QCheckBox):
         return self.checkState() == QtCore.Qt.Checked
 
 
+class ComboBox(QtWidgets.QComboBox):
+    def __init__(
+            self,
+            items: list[tuple[str, int]],
+            default: int | None = None,
+            on_change = None):
+        super().__init__()
+
+        for label, data in items:
+            self.addItem(label, data)
+
+        index = self.findData(default)
+        if index >= 0:
+            self.setCurrentIndex(index)
+        if on_change:
+            self.currentIndexChanged.connect(on_change)
+
+    def value(self) -> int:
+        return self.currentData()
+
+
 class Button(QtWidgets.QPushButton):
     def __init__(self, label: str, on_click = None):
         super().__init__(label)

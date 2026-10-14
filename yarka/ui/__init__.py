@@ -1,3 +1,3 @@
 from .action import ActionHandler
 from .dialog import ClosableDialog
-from .components import Button, Checkbox, NumberInput, Label, YaraTextEdit 
+from .components import Button, Checkbox, ComboBox, NumberInput, Label, YaraTextEdit 

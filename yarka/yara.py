@@ -4,6 +4,7 @@ import re
 from typing import Any, Dict, List, Union, Optional, Iterable, Callable
 import textwrap
 
+from .types import Wildcard, DEFAULT_WILDCARD
 from .wrappers import YaraEntity
 
 
@@ -12,7 +13,7 @@ class RuleBuilder(object):
             self, 
             name: str,
             show_comments: bool = True,
-            strict: bool = False,
+            wildcard: Wildcard = DEFAULT_WILDCARD,
             indent: int = 2,
             indent_headers: bool = False,
             wrap_curly_brace: bool = False,
@@ -21,7 +22,7 @@ class RuleBuilder(object):
         self.name = self._escape_name(name)
 
         self.show_comments = show_comments
-        self.strict = strict
+        self.wildcard = wildcard
         self.indent = indent
         self.indent_headers = indent_headers
         self.wrap_curly_brace = wrap_curly_brace
@@ -95,7 +96,7 @@ class RuleBuilder(object):
         for key, value in self.strings.items():
             content = value.build(
                 show_comments=self.show_comments,
-                strict=self.strict,
+                wildcard=self.wildcard,
                 indent=self.indent,
             )
             var_name = key if self.use_named_variables else ''
@@ -151,7 +152,7 @@ class RuleBuilder(object):
     def _build_entity(self, entity: YaraEntity) -> str:
         content = entity.build(
             show_comments=self.show_comments,
-            strict=self.strict,
+            wildcard=self.wildcard,
             indent=self.indent,
         )
 
@@ -171,7 +172,7 @@ class RulesetBuilder(UserList):
         return '\n\n'.join(rules)
 
     def __setattr__(self, name: str, value: Any):
-        if name in {'show_comments', 'strict', 'indent', 'indent_headers'}:
+        if name in {'show_comments', 'wildcard', 'indent', 'indent_headers'}:
             for rule in iter(self):
                 setattr(rule, name, value)
         else:

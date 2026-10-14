@@ -11,6 +11,7 @@ Just select chunk and press `Ctrl+Y` to make the rule
 - Make rule from selection in "**Strings**" view
 - Make "hunting" ruleset from selection in "**Functions**" view, 
   rule contains basic blocks and data refs content (strings, constants, etc...)
+- Fine-grained wildcarding of instructions: offsets, displacements, registers, constants
 - Yara syntax highlighting
 - Easy customization (see "[Customization](#customization)" section)
 
@@ -37,7 +38,10 @@ Rule style parameters:
 
 Rule editor default parameters (also editable in the editor window):
 - `DEFAULT_SHOW_COMMENTS` - show comments (default: `True`) 
-- `DEFAULT_STRICT_RULE` - don't wildcard relative offsets (default: `False`)
+- `DEFAULT_WILDCARD` - instruction parts replaced with `??`, any combination of
+  `Wildcard.OFFSETS`, `Wildcard.DISPLACEMENTS`, `Wildcard.REGISTERS`, `Wildcard.CONSTANTS`
+  (default: `Wildcard.OFFSETS | Wildcard.DISPLACEMENTS`). Selectable in the editor window
+  via dropdown, entries are defined by `WILDCARD_MODES`
 - `DEFAULT_INDENT` - rule indentation (default: `2`)
 - `DEFAULT_NAMED_VARIABLES` = use names for strings (default: `True`)
 

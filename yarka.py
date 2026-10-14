@@ -6,7 +6,7 @@ import ida_funcs
 import ida_strlist
 
 from yarka.adapter import YaraExtractor
-from yarka.types import String
+from yarka.types import String, Wildcard
 from yarka.extractor import RangeExtractor, FunctionExtractor
 from yarka.yara import RuleBuilder, RulesetBuilder
 from yarka import ui
@@ -19,9 +19,33 @@ INDENT_HEADERS = False          # indent for 'meta', 'strings', 'condition'
 
 # editor default settings
 DEFAULT_SHOW_COMMENTS = True    # show comments (checkbox)
-DEFAULT_STRICT_RULE = False     # don't wildcard relative offsets (checkbox)
+DEFAULT_WILDCARD = (            # wildcarded instruction parts (dropdown)
+    Wildcard.OFFSETS | Wildcard.DISPLACEMENTS
+)
 DEFAULT_INDENT = 2              # default indent
 DEFAULT_NAMED_VARIABLES = True  # use names for strings (variables)
+
+# wildcard dropdown entries (label, mask), the default must be one of them
+WILDCARD_MODES = [
+    (
+        'Exclude offsets + displacements + registers + constants',
+        Wildcard.OFFSETS | Wildcard.DISPLACEMENTS | Wildcard.REGISTERS | Wildcard.CONSTANTS,
+    ),
+    (
+        'Exclude offsets + displacements + constants',
+        Wildcard.OFFSETS | Wildcard.DISPLACEMENTS | Wildcard.CONSTANTS,
+    ),
+    (
+        'Exclude offsets + displacements + registers',
+        Wildcard.OFFSETS | Wildcard.DISPLACEMENTS | Wildcard.REGISTERS,
+    ),
+    (
+        'Exclude offsets + displacements',
+        Wildcard.OFFSETS | Wildcard.DISPLACEMENTS,
+    ),
+    ('Exclude offsets', Wildcard.OFFSETS),
+    ('Exclude nothing (strict)', Wildcard.NONE),
+]
 
 # values can be string or lambda
 DEFAULT_META_FIELDS = {
@@ -45,6 +69,7 @@ def generate_rule(name, entities) -> RuleBuilder:
         name,
         indent_headers=INDENT_HEADERS,
         wrap_curly_brace=WRAP_CURLY_BRACE,
+        wildcard=DEFAULT_WILDCARD,
     )
 
     for header, value in DEFAULT_META_FIELDS.items():
@@ -66,10 +91,10 @@ class YaraDialog(ui.ClosableDialog):
     def __init__(self, rule: RuleBuilder):
         self.rule = rule
 
-        self.strict_checkbox = ui.Checkbox(
-            label='strict',
-            default=DEFAULT_STRICT_RULE,
-            on_click=self.handle_strict_checkbox_click,
+        self.wildcard_combo = ui.ComboBox(
+            items=[(label, int(mask)) for label, mask in WILDCARD_MODES],
+            default=int(DEFAULT_WILDCARD),
+            on_change=self.handle_wildcard_change,
         )
         self.comments_checkbox = ui.Checkbox(
             label='show comments',
@@ -95,7 +120,7 @@ class YaraDialog(ui.ClosableDialog):
             title = 'Yarka - Generated Yara Rule',
             width=800,
             top_left_items=[
-                self.strict_checkbox,
+                self.wildcard_combo,
                 self.comments_checkbox,
                 self.use_named_variables_checkbox,
             ],
@@ -107,8 +132,8 @@ class YaraDialog(ui.ClosableDialog):
         content = self.rule.build()
         self.text_edit.set_content(content)
 
-    def handle_strict_checkbox_click(self):
-        self.rule.strict = self.strict_checkbox.is_checked()
+    def handle_wildcard_change(self):
+        self.rule.wildcard = Wildcard(self.wildcard_combo.value())
         self._rebuild_rule()
 
     def handle_comments_checkbox_click(self):
