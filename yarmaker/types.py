@@ -19,6 +19,19 @@ class Wildcard(IntFlag):
 
 DEFAULT_WILDCARD = Wildcard.OFFSETS | Wildcard.DISPLACEMENTS
 
+# x86 register operand types: o_reg plus intel.hpp o_trreg, o_dbreg, o_crreg,
+# o_fpreg, o_mmxreg, o_xmmreg, o_ymmreg, o_zmmreg, o_kreg (o_idpspec0..8)
+X86_REGISTER_TYPES = {idaapi.o_reg} | {
+    idaapi.o_idpspec0 + i for i in range(9)
+}
+
+# legacy prefixes and REX (an instruction longer than one byte starting
+# with 40-4F can only be a REX prefix, inc/dec reg being a single byte)
+X86_PREFIXES = frozenset(
+    {0x26, 0x2E, 0x36, 0x3E, 0x64, 0x65, 0x66, 0x67, 0xF0, 0xF2, 0xF3}
+    | set(range(0x40, 0x50))
+)
+
 
 class Operand(object):
     def __init__(self, operand: idaapi.op_t):
@@ -47,7 +60,7 @@ class Operand(object):
     def value(self) -> int:
         if self.operand.addr:
             value = self.operand.addr & 0xFFFFFFFF
-            is_signed = value & 0xF0000000
+            is_signed = value & 0x80000000
             return value - 2 ** 32 if is_signed else value
 
         return self.operand.value
@@ -98,12 +111,29 @@ class Instruction(object):
     def _has_data(op: Operand) -> bool:
         return bool(op.byte_offset and op.wildcard_kind)
 
+    def _trailer_size(self) -> int:
+        """Opcode bytes stored after the operand data.
+
+        3DNow! (0F 0F /r) encodes its opcode as a suffix byte following
+        ModRM, SIB and displacement
+        """
+        if idaapi.ph_get_id() != idaapi.PLFM_386:
+            return 0
+
+        data = self.bytes
+        i = 0
+        while i < len(data) and data[i] in X86_PREFIXES:
+            i += 1
+
+        return int(data[i:i + 2] == b'\x0f\x0f' and len(data) > i + 2)
+
     def _operand_ranges(self, wildcard: Wildcard) -> List[Tuple[int, int]]:
         operands = [op for op in self.operands if self._has_data(op)]
 
-        # operand data spans from its offset to the next operand data (or end)
+        # operand data spans from its offset to the next operand data
+        # (or to the end of the instruction, excluding any opcode suffix)
         starts = sorted({op.byte_offset for op in operands})
-        ends = dict(zip(starts, starts[1:] + [self.size]))
+        ends = dict(zip(starts, starts[1:] + [self.size - self._trailer_size()]))
 
         return [
             (op.byte_offset, ends[op.byte_offset])
@@ -124,13 +154,14 @@ class Instruction(object):
         types = {op.operand.type for op in operands}
         has_phrase = idaapi.o_phrase in types
         has_memory = bool(types & {idaapi.o_displ, idaapi.o_mem})
-        if not (has_phrase or has_memory or idaapi.o_reg in types):
+        has_register = bool(types & X86_REGISTER_TYPES)
+        if not (has_phrase or has_memory or has_register):
             return None
 
         # ModRM and SIB are placed right before displacement/immediate
         head_end = min(
             (op.byte_offset for op in operands if self._has_data(op)),
-            default=self.size,
+            default=self.size - self._trailer_size(),
         )
         sib = int(any(op.has_sib() for op in operands))
         modrm = head_end - 1 - sib
