@@ -53,7 +53,7 @@ class Operand(object):
     def value(self) -> int:
         if self.operand.addr:
             value = self.operand.addr & 0xFFFFFFFF
-            is_signed = value & 0xF0000000
+            is_signed = value & 0x80000000
             return value - 2 ** 32 if is_signed else value
 
         return self.operand.value
