@@ -66,7 +66,12 @@ class YaraInstructions(YaraEntity):
             show_comments: bool = True,
             wildcard: Wildcard = DEFAULT_WILDCARD,
             indent: int = 2,
+            oneliner: bool = False,
             **kwargs) -> str:
+
+        if oneliner:
+            data = ' '.join(insn.escape(wildcard) for insn in self.entities)
+            return f'{{ {data} }}'
 
         result = '{\n' if len(self.entities) > 1 else ''
         for insn in self.entities:
@@ -110,9 +115,9 @@ class YaraBytes(YaraEntity):
     def __init__(self, data: bytes):
         self.data = bytes(data)
 
-    def build(self, indent: int = 2, **kwargs) -> str:
+    def build(self, indent: int = 2, oneliner: bool = False, **kwargs) -> str:
 
-        if len(self.data) <= 16:
+        if oneliner or len(self.data) <= 16:
             data = self.data.hex(' ').upper()
             return f"{{ {data} }}" 
 

@@ -7,7 +7,7 @@
       "logoPath": "images/logo.png",
       "idaVersions": ">=8.3",
       "description" : "IDA plugin to create YARA signatures from x86 instructions, with fine grained masking controls.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "license": "GPL-3.0",
       "urls": {
         "repository": "https://github.com/cod3nym/yarmaker"
