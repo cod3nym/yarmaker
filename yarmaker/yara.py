@@ -19,6 +19,7 @@ class RuleBuilder(object):
             wrap_curly_brace: bool = False,
             use_named_variables: bool = True,
             show_template: bool = True,
+            oneliner: bool = False,
         ):
         self.name = self._escape_name(name)
 
@@ -29,6 +30,7 @@ class RuleBuilder(object):
         self.wrap_curly_brace = wrap_curly_brace
         self.use_named_variables = use_named_variables
         self.show_template = show_template
+        self.oneliner = oneliner
 
         self.meta: Dict[str, Union[str, Callable]] = {}
         self.strings: Dict[str, YaraEntity] = {}
@@ -103,6 +105,7 @@ class RuleBuilder(object):
                 show_comments=self.show_comments,
                 wildcard=self.wildcard,
                 indent=self.indent,
+                oneliner=self.oneliner,
             )
             var_name = key if self.use_named_variables else ''
             line = f'${var_name} = {content}'
@@ -161,6 +164,7 @@ class RuleBuilder(object):
             show_comments=self.show_comments,
             wildcard=self.wildcard,
             indent=self.indent,
+            oneliner=self.oneliner,
         )
 
         return content
@@ -179,7 +183,7 @@ class RulesetBuilder(UserList):
         return '\n\n'.join(rules)
 
     def __setattr__(self, name: str, value: Any):
-        if name in {'show_comments', 'wildcard', 'indent', 'indent_headers', 'show_template'}:
+        if name in {'show_comments', 'wildcard', 'indent', 'indent_headers', 'show_template', 'oneliner'}:
             for rule in iter(self):
                 setattr(rule, name, value)
         else:

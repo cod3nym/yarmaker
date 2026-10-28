@@ -22,6 +22,7 @@ DEFAULT_SHOW_COMMENTS = True    # show comments (checkbox)
 DEFAULT_WILDCARD = (            # wildcarded instruction parts (dropdown)
     Wildcard.OFFSETS | Wildcard.DISPLACEMENTS
 )
+DEFAULT_ONELINER = False        # single line patterns without comments (checkbox)
 DEFAULT_INDENT = 3              # default indent
 DEFAULT_NAMED_VARIABLES = True  # use names for strings (variables)
 DEFAULT_SHOW_TEMPLATE = False   # show full rule instead of strings only (checkbox)
@@ -72,6 +73,7 @@ def generate_rule(name, entities) -> RuleBuilder:
         wrap_curly_brace=WRAP_CURLY_BRACE,
         wildcard=DEFAULT_WILDCARD,
         show_template=DEFAULT_SHOW_TEMPLATE,
+        oneliner=DEFAULT_ONELINER,
     )
 
     for header, value in DEFAULT_META_FIELDS.items():
@@ -103,6 +105,12 @@ class YaraDialog(ui.ClosableDialog):
             default=DEFAULT_SHOW_COMMENTS,
             on_click=self.handle_comments_checkbox_click,
         )
+        self.oneliner_checkbox = ui.Checkbox(
+            label='One-liner',
+            default=DEFAULT_ONELINER,
+            on_click=self.handle_oneliner_click,
+        )
+        self.comments_checkbox.setEnabled(not DEFAULT_ONELINER)
         self.use_named_variables_checkbox = ui.Checkbox(
             label='Named variables',
             default=DEFAULT_NAMED_VARIABLES,
@@ -129,6 +137,7 @@ class YaraDialog(ui.ClosableDialog):
             top_left_items=[
                 self.wildcard_combo,
                 self.comments_checkbox,
+                self.oneliner_checkbox,
                 self.use_named_variables_checkbox,
             ],
             top_right_items=[self.indent_edit_label, self.indent_edit],
@@ -145,6 +154,14 @@ class YaraDialog(ui.ClosableDialog):
         self._rebuild_rule()
 
     def handle_comments_checkbox_click(self):
+        self.rule.show_comments = self.comments_checkbox.is_checked()
+        self._rebuild_rule()
+
+    def handle_oneliner_click(self):
+        oneliner = self.oneliner_checkbox.is_checked()
+        self.rule.oneliner = oneliner
+        self.comments_checkbox.setEnabled(not oneliner)
+        # comments are never shown in oneliner mode
         self.rule.show_comments = self.comments_checkbox.is_checked()
         self._rebuild_rule()
 
