@@ -17,13 +17,7 @@ Just select chunk and press `Ctrl+Y` to create a Yara hex pattern.
 
 ### Installation
 
-Install using the [Hex-Rays CLI tool (hcli)](https://github.com/HexRaysSA/ida-hcli):
-```bash
-pip install ida-hcli
-hcli plugin install yarmaker
-```
-
-**OR** install manually by copy `yarmaker.py` and the `yarmaker` folder to your IDA plugins directory (depends on your system):
+Install manually by copy `yarmaker.py` and the `yarmaker` folder to your IDA plugins directory (depends on your system):
 - **Windows**: `%APPDATA%\Hex-Rays\IDA Pro\plugins\`
 - **macOS**: `~/Library/Application Support/IDA Pro/plugins/`
 - **Linux**: `~/.idapro/plugins/`
@@ -63,10 +57,6 @@ DEFAULT_CONDITIONS = [
     lambda count: f'{2 * count // 3} of them' if count > 2 else 'all of them'
 ]
 ```
-
-### TODO
-- More entities for hunting ruleset (available now via hotkey `Ctrl+Alt+Y`)
-- Identify more bugs during use (waiting for your issues!)
 
 ### Credits
 Thanks to [mkYARA](https://github.com/fox-it/mkYARA) IDA plugin, 
