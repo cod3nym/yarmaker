@@ -19,6 +19,12 @@ class Wildcard(IntFlag):
 
 DEFAULT_WILDCARD = Wildcard.OFFSETS | Wildcard.DISPLACEMENTS
 
+# x86 register operand types: o_reg plus intel.hpp o_trreg, o_dbreg, o_crreg,
+# o_fpreg, o_mmxreg, o_xmmreg, o_ymmreg, o_zmmreg, o_kreg (o_idpspec0..8)
+X86_REGISTER_TYPES = {idaapi.o_reg} | {
+    idaapi.o_idpspec0 + i for i in range(9)
+}
+
 
 class Operand(object):
     def __init__(self, operand: idaapi.op_t):
@@ -124,7 +130,8 @@ class Instruction(object):
         types = {op.operand.type for op in operands}
         has_phrase = idaapi.o_phrase in types
         has_memory = bool(types & {idaapi.o_displ, idaapi.o_mem})
-        if not (has_phrase or has_memory or idaapi.o_reg in types):
+        has_register = bool(types & X86_REGISTER_TYPES)
+        if not (has_phrase or has_memory or has_register):
             return None
 
         # ModRM and SIB are placed right before displacement/immediate
