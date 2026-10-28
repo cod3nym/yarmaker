@@ -18,6 +18,12 @@ if __name__ == '__main__' and len(sys.argv) > 1:
     import idapro
     idapro.open_database(sys.argv[1], True)
 
+# IDA may have loaded an installed copy of the plugin (and reset sys.path
+# when opening the database); test this checkout instead
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+for name in [m for m in sys.modules if m == 'yarmaker' or m.startswith('yarmaker.')]:
+    del sys.modules[name]
+
 import idaapi
 import ida_bytes
 import ida_segment
