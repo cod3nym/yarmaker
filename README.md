@@ -17,7 +17,13 @@ Just select chunk and press `Ctrl+Y` to create a Yara hex pattern.
 
 ### Installation
 
-Install manually by copy `yarmaker.py` and the `yarmaker` folder to your IDA plugins directory (depends on your system):
+Install using the Hex-Rays CLI tool (hcli):
+```
+pip install ida-hcli
+hcli plugin install yarmaker
+```
+
+**OR** Install manually by copy `yarmaker.py` and the `yarmaker` folder to your IDA plugins directory (depends on your system):
 - **Windows**: `%APPDATA%\Hex-Rays\IDA Pro\plugins\`
 - **macOS**: `~/Library/Application Support/IDA Pro/plugins/`
 - **Linux**: `~/.idapro/plugins/`
@@ -57,10 +63,6 @@ DEFAULT_CONDITIONS = [
     lambda count: f'{2 * count // 3} of them' if count > 2 else 'all of them'
 ]
 ```
-
-### Credits
-Thanks to [mkYARA](https://github.com/fox-it/mkYARA) IDA plugin, 
-which was the inspiration for this project
 
 ### License
 YarMaker is licensed under the [GNU General Public License v3.0](LICENSE).
